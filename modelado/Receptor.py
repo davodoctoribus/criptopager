@@ -4,7 +4,7 @@ import json
 # Especificação do receptor
 capcode = input("Capcode deste pager (ex: 001): ")
 endereco_IP = '127.0.0.1'  # (IP da central) trocar se for outra máquina/rede pelo IP real
-PORT = 5056                # necessário ser a mesma porta do transmissor
+PORT = 5060                # necessário ser a mesma porta do transmissor
 
 # Criação do socket e conexão com a central
 servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

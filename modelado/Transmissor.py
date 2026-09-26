@@ -3,36 +3,9 @@ import json
 import threading
 import time
 
-#Especificação do endereço IP e porta da rede de computadores
-HOST = '' #escutando todas as redes
-PORT = 5060
-
-#Criação do socket por TCP
-servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-servidor.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-#Relaciona o socket criado ao IP e à Porta configurados e coloca um limite no número de conexões
-servidor.bind((HOST, PORT))
-servidor.listen(5)
-
-conexoes = []       # lista com todos os pagers atualmente conectados
-lock = threading.Lock()  # evita que duas threads mexam na lista ao mesmo tempo
-
-def aceitar_conexoes(): #não trava o envio de mensagens, aceita novos receptores (pagers) a qualquer momento.
-    while True:
-        conexao, endereco = servidor.accept()
-        with lock:
-            conexoes.append(conexao)
-        print(f"[+] Novo pager conectado: {endereco}")
-
-import socket
-import json
-import threading
-import time
-
 # Especificação do endereço IP e porta da rede de computadores
 HOST = ''
-PORT = 5050  # portas 0-1023 são reservadas pelo sistema, por isso trocamos a porta 1
+PORT = 5060  # portas 0-1023 são reservadas pelo sistema, por isso trocamos a porta 1
 
 # Criação do socket por TCP
 servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -64,6 +37,7 @@ def enviar_mensagem(capcode, mensagem):
     payload = {'capcode': capcode, 'mensagem': mensagem, 'tempo': time.time()}
     dados = json.dumps(payload).encode()  # dicionário -> string JSON -> bytes
 
+#Tratamento de exceções
     with lock:
         desconectados = []
         for conexao in conexoes:
