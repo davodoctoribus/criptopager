@@ -2,10 +2,15 @@ import socket
 import json
 import threading
 import time
+from cryptography.fernet import Fernet
+
+#definição da chave simétrica
+CHAVE = b'q123456789012345678901234567890123456789012='
+f = Fernet(CHAVE)
 
 # Especificação do endereço IP e porta da rede de computadores
 HOST = ''
-PORT = 5060  # portas 0-1023 são reservadas pelo sistema, por isso trocamos a porta 1
+PORT = 5050  # portas 0-1023 são reservadas pelo sistema, por isso trocamos a porta 1
 
 # Criação do socket por TCP
 servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -20,8 +25,8 @@ lock = threading.Lock()  # evita que duas threads mexam na lista ao mesmo tempo
 
 
 def aceitar_conexoes():
-    """Roda em background aceitando novos pagers a qualquer momento,
-    sem travar o envio de mensagens."""
+    #Roda em background aceitando novos pagers a qualquer momento,
+    #sem travar o envio de mensagens.
     while True:
         conexao, endereco = servidor.accept()
         with lock:
@@ -34,15 +39,19 @@ def enviar_mensagem(capcode, mensagem):
     #Assim reproduz o comportamento real: a central emite para todos,
     #e cada pager decide se a mensagem é para ele (nosso caso é comparando o capcode).
     #É justamente esse broadcast sem criptografia que torna o sistema facilmente interceptável.
-    payload = {'capcode': capcode, 'mensagem': mensagem, 'tempo': time.time()}
+
+    #parte da criptografia: converte o texto para bytes -> (.encode()) , cifra via AES -> f.encrypt , transforma de volta pra string -> (.decode())
+    mensagem_criptografada = f.encrypt(mensagem.encode()).decode()
+
+    payload = {'capcode': capcode, 'mensagem': mensagem_criptografada, 'tempo': time.time()}
     dados = json.dumps(payload).encode()  # dicionário -> string JSON -> bytes
 
-#Tratamento de exceções
+# Tratamento de exceções
     with lock:
         desconectados = []
         for conexao in conexoes:
             try:
-                conexao.sendall(dados)
+                conexao.sendall(dados) #broadcast (envia o pacote encriptado para todos os pagers conectados)
             except (BrokenPipeError, ConnectionResetError):
                 desconectados.append(conexao)  # pager caiu, marcar para remoção
         for conexao in desconectados:
@@ -56,6 +65,6 @@ if __name__ == "__main__":
 
     while True:
         capcode = input("\nCapcode do destinatário: ")
-        mensagem = input("Mensagem: ")
+        mensagem = input("Digite a mensagem: ")
         enviar_mensagem(capcode, mensagem)
         print("Mensagem transmitida para todos os pagers conectados.")
